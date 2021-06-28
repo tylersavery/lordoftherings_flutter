@@ -9,6 +9,10 @@ class QuoteModel extends Equatable {
     required this.dialog,
   });
 
+  get dialogNormalized {
+    return this.dialog.replaceAll("    ", "");
+  }
+
   factory QuoteModel.fromJson(json) {
     return QuoteModel(
       id: json['_id'],
