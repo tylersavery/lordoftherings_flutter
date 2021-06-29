@@ -24,7 +24,7 @@ abstract class ApiRepository {
 
   Options get _options {
     return Options(headers: {
-      'Authorization': "Bearer B6L_9DnST66HKzlH07-8",
+      'Authorization': "Bearer YOUR_API_KEY_HERE",
     });
   }
 
