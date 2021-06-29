@@ -37,4 +37,16 @@ abstract class ApiRepository {
     final response = await this.client.get(url, options: this._options);
     return response.data;
   }
+
+  Map<String, int> page(int page) {
+    return {
+      'page': page,
+    };
+  }
+
+  Map<String, int> limit(int limit) {
+    return {
+      'limit': limit,
+    };
+  }
 }

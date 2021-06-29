@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lordoftherings_flutter/screens/character_list_screen.dart';
+import 'package:lordoftherings_flutter/screens/movie_list_screen.dart';
 import 'package:lordoftherings_flutter/screens/quote_list_screen.dart';
 
 class RootScreen extends StatefulWidget {
@@ -9,11 +11,11 @@ class RootScreen extends StatefulWidget {
 }
 
 class _RootScreenState extends State<RootScreen> {
-  int _currentIndex = 2;
+  int _currentIndex = 0;
 
   final List<Widget> _children = [
-    Text("TODO: Create Movie List Screen"),
-    Text("TODO: Create Quote List Screen"),
+    MovieListScreen(),
+    CharacterListScreen(),
     QuoteListScreen(),
   ];
 
