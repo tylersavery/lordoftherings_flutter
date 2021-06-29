@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lordoftherings_flutter/screens/character_detail_screen.dart';
 import 'package:lordoftherings_flutter/store/character/character_model.dart';
 
 class CharacterCard extends StatelessWidget {
@@ -12,7 +13,13 @@ class CharacterCard extends StatelessWidget {
       leading: Icon(Icons.person),
       trailing: Icon(Icons.chevron_right),
       subtitle: Text(character.race),
-      onTap: () {},
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (ctx) => CharacterDetailScreen(character),
+          ),
+        );
+      },
     );
   }
 }

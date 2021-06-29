@@ -1,6 +1,15 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:intl/intl.dart';
+import 'package:lordoftherings_flutter/components/quote_card.dart';
+import 'package:lordoftherings_flutter/components/stat.dart';
+import 'package:lordoftherings_flutter/store/common/api_repository.dart';
 import 'package:lordoftherings_flutter/store/movie/movie_model.dart';
+import 'package:lordoftherings_flutter/store/quote/quote_bloc.dart';
+import 'package:lordoftherings_flutter/store/quote/quote_model.dart';
+import 'package:lordoftherings_flutter/store/quote/quote_repository.dart';
 import 'package:lordoftherings_flutter/utils/formatting.dart';
 
 class MovieDetailScreen extends StatelessWidget {
@@ -86,52 +95,90 @@ class MovieDetailScreen extends StatelessWidget {
             ))
           ];
         },
-        body: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            Text("Test1"),
-            Text("Test2"),
-          ],
+        body: BlocProvider<MovieQuoteBloc>(
+          create: (ctx) => MovieQuoteBloc(
+            movie: this.movie,
+            repository: QuoteRepository(
+              Dio(),
+            ),
+          )..add(
+              MovieQuoteFetched(),
+            ),
+          child: MovieQuoteList(),
         ),
       ),
     );
   }
 }
 
-class Stat extends StatelessWidget {
-  final String label;
-  final String value;
-  final CrossAxisAlignment crossAxisAlignment;
+class MovieQuoteList extends StatefulWidget {
+  const MovieQuoteList({Key? key}) : super(key: key);
 
-  const Stat({
-    Key? key,
-    required this.label,
-    required this.value,
-    this.crossAxisAlignment = CrossAxisAlignment.start,
-  }) : super(key: key);
+  @override
+  _MovieQuoteListState createState() => _MovieQuoteListState();
+}
+
+class _MovieQuoteListState extends State<MovieQuoteList> {
+  final PagingController<int, QuoteModel> _pagingController =
+      PagingController(firstPageKey: 1);
+
+  late MovieQuoteBloc _movieQuoteBloc;
+
+  @override
+  void initState() {
+    _movieQuoteBloc = context.read<MovieQuoteBloc>();
+    _pagingController.addPageRequestListener((pageKey) {
+      _movieQuoteBloc.add(MovieQuoteFetched());
+    });
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _pagingController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: this.crossAxisAlignment,
-      children: [
-        Text(
-          this.value,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        Text(
-          this.label.toUpperCase(),
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.white54,
-          ),
-        ),
-      ],
+    return BlocListener<MovieQuoteBloc, QuoteState>(
+      listener: (context, state) {
+        if (state.status == ApiRequestStatus.success) {
+          if (state.page == state.pages) {
+            _pagingController.appendLastPage(state.appendedQuotes);
+          } else {
+            _pagingController.appendPage(state.appendedQuotes, state.page + 1);
+          }
+        }
+      },
+      child: BlocBuilder<MovieQuoteBloc, QuoteState>(
+        builder: (context, state) {
+          switch (state.status) {
+            case ApiRequestStatus.failure:
+              return Center(child: Text("Error"));
+            case ApiRequestStatus.success:
+              return RefreshIndicator(
+                onRefresh: () => Future.sync(
+                  () {
+                    _pagingController.refresh();
+                    _movieQuoteBloc.add(MovieQuoteResetFetched());
+                  },
+                ),
+                child: PagedListView<int, QuoteModel>(
+                  padding: EdgeInsets.zero,
+                  pagingController: _pagingController,
+                  builderDelegate: PagedChildBuilderDelegate<QuoteModel>(
+                    itemBuilder: (context, quote, index) {
+                      return QuoteCard(quote);
+                    },
+                  ),
+                ),
+              );
+            default:
+              return const Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
     );
   }
 }

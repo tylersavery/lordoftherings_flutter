@@ -11,11 +11,16 @@ class CharacterRepository extends ApiRepository {
   Future<ResponseListModel<CharacterModel>> fetchCharacters({
     int page = 1,
     int limit = 30,
+    String? query,
   }) async {
-    final params = {
+    Map<String, dynamic> params = {
       ...this.page(page),
       ...this.limit(limit),
     };
+
+    if (query != null) {
+      params = {...params, 'name': '/$query/i'};
+    }
 
     final data = await this.get('/character', params);
     final List<CharacterModel> docs = data['docs']

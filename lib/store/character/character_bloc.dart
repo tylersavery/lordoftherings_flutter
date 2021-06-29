@@ -79,3 +79,62 @@ class CharacterBloc extends Bloc<CharacterEvent, CharacterState> {
     return await _mapFetchCharactersToState(newState);
   }
 }
+
+class CharacterSearchBloc extends Bloc<CharacterSearchEvent, CharacterState> {
+  final CharacterRepository repository;
+  final String query;
+
+  CharacterSearchBloc({required this.repository, required this.query})
+      : super(const CharacterState());
+
+  @override
+  Stream<Transition<CharacterSearchEvent, CharacterState>> transformEvents(
+    Stream<CharacterSearchEvent> events,
+    TransitionFunction<CharacterSearchEvent, CharacterState> transitionFn,
+  ) {
+    return super.transformEvents(
+      events.debounceTime(const Duration(milliseconds: 500)),
+      transitionFn,
+    );
+  }
+
+  @override
+  Stream<CharacterState> mapEventToState(CharacterSearchEvent event) async* {
+    if (event is CharacterSearchFetched) {
+      yield await _mapFetchCharactersToState(state);
+    }
+  }
+
+  Future<CharacterState> _mapFetchCharactersToState(
+      CharacterState state) async {
+    if (state.page > state.pages) return state;
+
+    try {
+      if (state.status == ApiRequestStatus.initial) {
+        final data =
+            await this.repository.fetchCharacters(query: this.query, page: 1);
+        return state.copyWith(
+          status: ApiRequestStatus.success,
+          characters: data.docs,
+          appendedCharacters: data.docs,
+          page: data.page,
+          pages: data.pages,
+        );
+      }
+
+      final data = await this
+          .repository
+          .fetchCharacters(query: this.query, page: state.page + 1);
+
+      return state.copyWith(
+        status: ApiRequestStatus.success,
+        characters: List.of(state.characters)..addAll(data.docs),
+        appendedCharacters: data.docs,
+        page: data.page,
+        pages: data.pages,
+      );
+    } on Exception {
+      return state.copyWith(status: ApiRequestStatus.failure);
+    }
+  }
+}
